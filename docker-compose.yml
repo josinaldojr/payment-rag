@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: payment-gateway-rag-db
+    environment:
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_password
+      POSTGRES_DB: payment_gateway_rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_rag:/var/lib/postgresql/data
+
+volumes:
+  pgdata_rag:
