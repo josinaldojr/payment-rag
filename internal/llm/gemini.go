@@ -20,7 +20,6 @@ type GeminiClient struct {
 	client *genai.Client
 }
 
-
 func NewGeminiClient(ctx context.Context) (*GeminiClient, error) {
 	apiKey := os.Getenv("GOOGLE_API_KEY")
 	if apiKey == "" {
@@ -80,12 +79,13 @@ func (g *GeminiClient) GenerateAnswer(
 	question string,
 	chunks []rag.DocChunk,
 	provider rag.Provider,
+	lang string,
 ) (string, error) {
 	if len(chunks) == 0 {
 		return "I couldn't find any relevant information in the indexed documentation for this question.", nil
 	}
 
-	systemPrompt, contextText := buildSystemPrompt(provider, chunks)
+	systemPrompt, contextText := buildSystemPrompt(provider, chunks, lang)
 
 	cfg := &genai.GenerateContentConfig{
 		SystemInstruction: genai.Text(systemPrompt)[0],
@@ -119,16 +119,26 @@ func (g *GeminiClient) GenerateAnswer(
 	return txt, nil
 }
 
-
 // -------- helpers --------
 
-func buildSystemPrompt(provider rag.Provider, chunks []rag.DocChunk) (string, string) {
+func buildSystemPrompt(provider rag.Provider, chunks []rag.DocChunk, lang string) (string, string) {
 	var sys strings.Builder
 	var ctx strings.Builder
+
+	target := map[string]string{
+		"pt": "Brazilian Portuguese",
+		"en": "English",
+		"es": "Spanish",
+	}[lang]
+	if target == "" {
+		target = "Brazilian Portuguese"
+	}
 
 	sys.WriteString("You are a technical assistant specialized in payment gateway integrations for ")
 	sys.WriteString(string(provider))
 	sys.WriteString(". ")
+	sys.WriteString(target)
+	sys.WriteString(" is the target language for all responses. ")
 	sys.WriteString("Always answer ONLY based on the provided documentation excerpts. ")
 	sys.WriteString("If the answer is not clearly present, say that it is not available in the indexed documentation. ")
 	sys.WriteString("Do not invent endpoints, URLs, fields or values. ")
@@ -140,8 +150,8 @@ func buildSystemPrompt(provider rag.Provider, chunks []rag.DocChunk) (string, st
 	sys.WriteString("- Important notes (3DS, capture, refunds, error codes, etc.)\n")
 
 	const (
-		maxChunks       = 10   
-		maxChunkChars   = 1200 
+		maxChunks     = 10
+		maxChunkChars = 1200
 	)
 
 	n := len(chunks)
@@ -163,7 +173,6 @@ func buildSystemPrompt(provider rag.Provider, chunks []rag.DocChunk) (string, st
 
 	return sys.String(), ctx.String()
 }
-
 
 func normalizeWhitespace(s string) string {
 	s = strings.TrimSpace(s)

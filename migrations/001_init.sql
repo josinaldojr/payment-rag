@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Tabela principal dos pedaços de documentação
 CREATE TABLE IF NOT EXISTS doc_chunk (
     id           BIGSERIAL PRIMARY KEY,
-    provider     TEXT NOT NULL,        -- 'rede', 'entrepay', etc
+    provider     TEXT NOT NULL,        
     section_type TEXT,
     title        TEXT,
     content      TEXT NOT NULL,
@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS doc_chunk_embedding (
     embedding  VECTOR(768),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- Índices úteis
 
 CREATE INDEX IF NOT EXISTS idx_doc_chunk_provider
     ON doc_chunk (provider);

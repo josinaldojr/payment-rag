@@ -51,6 +51,7 @@ type AskRequest struct {
 	Question string    `json:"question"`
 	Provider *Provider `json:"provider,omitempty"` // opcional; se vazio, você detecta pelo texto
 	TopK     int       `json:"topK,omitempty"`     // opcional; default interno
+	Lang     string      `json:"lang"`
 }
 
 // SourceRef

@@ -7,5 +7,5 @@ type EmbeddingsClient interface {
 }
 
 type LLMClient interface {
-	GenerateAnswer(ctx context.Context, question string, chunks []DocChunk, provider Provider) (string, error)
+	GenerateAnswer(ctx context.Context, question string, chunks []DocChunk, provider Provider, lang string) (string, error)
 }

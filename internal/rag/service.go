@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	wl "github.com/abadojack/whatlanggo"
 )
 
 type Service struct {
@@ -43,6 +44,10 @@ func (s *Service) Ask(ctx context.Context, req AskRequest) (*AskResponse, error)
 		topK = 5
 	}
 
+	if req.Lang == "" || req.Lang == "auto" {
+      req.Lang = detectLang(q) // nova função logo abaixo
+  }
+
 	// Busca vetorial
 	chunks, err := s.repo.SearchSimilarChunks(ctx, provider, vec, topK)
 	if err != nil {
@@ -57,7 +62,7 @@ func (s *Service) Ask(ctx context.Context, req AskRequest) (*AskResponse, error)
 	}
 
 	// Gera resposta final com LLM usando os chunks
-	answer, err := s.llm.GenerateAnswer(ctx, q, chunks, provider)
+	answer, err := s.llm.GenerateAnswer(ctx, q, chunks, provider, req.Lang)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +83,17 @@ func (s *Service) Ask(ctx context.Context, req AskRequest) (*AskResponse, error)
 		Provider: provider,
 		Sources:  sources,
 	}, nil
+}
+
+func detectLang(s string) string {
+    info := wl.Detect(s)
+    switch wl.LangToString(info.Lang) {
+    case "Por": return "pt"
+    case "Eng": return "en"
+    case "Spa": return "es"
+    default:
+        return "pt"
+    }
 }
 
 func resolveProvider(p *Provider, question string) Provider {

@@ -5,6 +5,7 @@ go 1.24
 toolchain go1.24.10
 
 require (
+	github.com/abadojack/whatlanggo v1.0.1
 	github.com/dslipak/pdf v0.0.2
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.7.6

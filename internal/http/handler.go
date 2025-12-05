@@ -31,6 +31,10 @@ func (h *Handler) Ask(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	
+	if req.Lang == "" {
+    req.Lang = "auto"
+	}	
 
 	resp, err := h.ragService.Ask(ctx, req)
 	if err != nil {
