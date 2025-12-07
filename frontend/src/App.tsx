@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import type { AskRequest, AskResponse, Message, AskSource } from "./types";
+import { stripSourcesFromContent } from "./utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const RAW_API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
 const API_URL = RAW_API_URL.replace(/\/+$/, "");
 
 export const App: React.FC = () => {
-  const [lang, setLang] = useState<"auto"|"pt"|"en"|"es">("auto");
+  const [lang, setLang] = useState<"auto" | "pt" | "en" | "es">("auto");
 
   const [provider, setProvider] = useState<"rede" | "entrepay">("rede");
   const [question, setQuestion] = useState("");
@@ -13,6 +16,8 @@ export const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [showTopKHelp, setShowTopKHelp] = useState(false);
 
   const handleAsk = async () => {
     const trimmed = question.trim();
@@ -89,19 +94,19 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-      <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 rounded-full px-2 py-1 text-xs">
-        <span className="text-slate-400">Idioma</span>
-        <select
-          value={lang}
-          onChange={(e) => setLang(e.target.value as any)}
-          className="bg-transparent outline-none"
-        >
-          <option value="auto">Auto</option>
-          <option value="pt">Português</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
-        </select>
-      </div>
+        <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 rounded-full px-2 py-1 text-xs">
+          <span className="text-slate-400">Idioma</span>
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value as any)}
+            className="bg-transparent outline-none"
+          >
+            <option value="auto">Auto</option>
+            <option value="pt">Português</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">
@@ -118,21 +123,19 @@ export const App: React.FC = () => {
             </span>
             <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 rounded-full px-1 py-1 text-xs">
               <button
-                className={`px-3 py-1 rounded-full ${
-                  provider === "rede"
+                className={`px-3 py-1 rounded-full ${provider === "rede"
                     ? "bg-emerald-500 text-slate-950 font-semibold"
                     : "text-slate-400 hover:text-slate-100"
-                }`}
+                  }`}
                 onClick={() => setProvider("rede")}
               >
                 e-Rede
               </button>
               <button
-                className={`px-3 py-1 rounded-full ${
-                  provider === "entrepay"
+                className={`px-3 py-1 rounded-full ${provider === "entrepay"
                     ? "bg-emerald-500 text-slate-950 font-semibold"
                     : "text-slate-500 cursor-not-allowed"
-                }`}
+                  }`}
                 onClick={() => {
                   setProvider("entrepay");
                 }}
@@ -147,12 +150,12 @@ export const App: React.FC = () => {
       <main className="flex-1">
         <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col h-[calc(100vh-140px)]">
           <div className="flex items-center justify-between mb-3 gap-4">
-            <div className="flex items-center gap-3 text-xs text-slate-400">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
               <span className="px-2 py-1 rounded-full bg-slate-900/80 border border-slate-800">
                 Backend: <span className="text-emerald-400">{API_URL}</span>
               </span>
-              <span className="px-2 py-1 rounded-full bg-slate-900/80 border border-slate-800">
-                TopK:{" "}
+              <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900/80 border border-slate-800">
+                <span className="text-slate-400">Top-K</span>
                 <input
                   type="range"
                   min={3}
@@ -160,17 +163,50 @@ export const App: React.FC = () => {
                   value={topK}
                   onChange={(e) => setTopK(Number(e.target.value))}
                   className="align-middle"
-                />{" "}
-                <span className="ml-1 text-emerald-400">{topK}</span>
-              </span>
+                />
+                <span className="ml-1 text-emerald-400 w-6 text-center">
+                  {topK}
+                </span>
+
+                {/* botãozinho de ajuda */}
+                <button
+                  type="button"
+                  onClick={() => setShowTopKHelp((v) => !v)}
+                  className="ml-1 w-5 h-5 rounded-full border border-slate-600 text-[10px] flex items-center justify-center text-slate-300 hover:border-emerald-400 hover:text-emerald-300 transition"
+                  title="O que é Top-K?"
+                >
+                  ?
+                </button>
+              </div>
             </div>
+
             {error && (
               <div className="text-xs text-red-400">
                 {error}
               </div>
             )}
           </div>
-
+          {showTopKHelp && (
+            <div className="mb-3 max-w-5xl mx-auto px-4">
+              <div className="text-[11px] text-slate-300 bg-slate-900/80 border border-slate-800 rounded-2xl px-3 py-2">
+                <p className="font-semibold text-slate-100 mb-1">
+                  O que é Top-K?
+                </p>
+                <p className="mb-1">
+                  Top-K define <span className="font-semibold">quantos trechos da documentação</span> o sistema
+                  busca e envia como contexto para a IA na resposta.
+                </p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li><span className="font-semibold">K pequeno (3–4):</span> usa poucos trechos, mais preciso e rápido, bom para perguntas bem específicas.</li>
+                  <li><span className="font-semibold">K médio (6–8):</span> equilíbrio entre contexto e precisão — recomendado para uso geral.</li>
+                  <li><span className="font-semibold">K maior (9–12):</span> mais contexto para perguntas amplas, mas pode ficar mais lento e custar mais tokens.</li>
+                </ul>
+                <p className="mt-1 text-slate-400">
+                  Em resumo: <span className="font-semibold">Top-K controla o “quanto de documentação” a IA enxerga</span> na hora de montar a resposta.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto space-y-3 rounded-2xl bg-slate-950/80 border border-slate-800 p-4">
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 text-sm gap-2">
@@ -216,10 +252,9 @@ export const App: React.FC = () => {
                 onClick={handleAsk}
                 disabled={loading || !question.trim()}
                 className={`px-4 py-2 rounded-2xl text-sm font-semibold transition
-                  ${
-                    loading || !question.trim()
-                      ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                      : "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                  ${loading || !question.trim()
+                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                    : "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
                   }`}
               >
                 {loading ? "Enviando..." : "Perguntar"}
@@ -238,37 +273,46 @@ export const App: React.FC = () => {
 
 const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
   const isUser = msg.role === "user";
+  const content = isUser ? msg.content : stripSourcesFromContent(msg.content);
+
   return (
     <div
-      className={`flex ${
-        isUser ? "justify-end" : "justify-start"
-      } text-sm`}
+      className={`flex ${isUser ? "justify-end" : "justify-start"
+        } text-sm`}
     >
       <div
-        className={`max-w-[80%] rounded-2xl px-3 py-2 border backdrop-blur ${
-          isUser
+        className={`max-w-[80%] rounded-2xl px-3 py-2 border backdrop-blur ${isUser
             ? "bg-emerald-500 text-slate-950 border-emerald-400"
             : "bg-slate-950/90 text-slate-100 border-slate-800"
-        }`}
+          }`}
       >
-        <div className="whitespace-pre-wrap">{msg.content}</div>
+        {isUser ? (
+          <div className="whitespace-pre-wrap">{content}</div>
+        ) : (
+          <div className="prose prose-invert prose-sm max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {content}
+            </ReactMarkdown>
+          </div>
+        )}
+
+        {/* Fontes bonitinhas em chips */}
         {!isUser && msg.sources && msg.sources.length > 0 && (
-          <div className="mt-2 border-t border-slate-800 pt-1">
-            <div className="text-[9px] uppercase text-slate-500 mb-1">
-              Sources
+          <div className="mt-3 border-t border-slate-800 pt-2">
+            <div className="text-[10px] uppercase text-slate-500 mb-1 tracking-[0.1em]">
+              Fontes
             </div>
             <div className="flex flex-wrap gap-1">
-              {msg.sources.map((s: AskSource) => (
+              {msg.sources.map((s) => (
                 <a
                   key={s.chunkId + s.title}
                   href={s.sourceUrl || "#"}
                   target={s.sourceUrl ? "_blank" : "_self"}
                   rel="noreferrer"
-                  className={`text-[9px] px-2 py-1 rounded-full border ${
-                    s.sourceUrl
+                  className={`text-[10px] px-2 py-1 rounded-full border transition ${s.sourceUrl
                       ? "border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10"
                       : "border-slate-700 text-slate-400"
-                  }`}
+                    }`}
                 >
                   {s.title || `Chunk ${s.chunkId}`}
                 </a>
@@ -280,3 +324,4 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
     </div>
   );
 };
+
